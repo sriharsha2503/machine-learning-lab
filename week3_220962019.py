@@ -229,43 +229,39 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-# Load the dataset
+
 df = pd.read_csv('hepatitis_csv.csv')
 
-# Select the features and target variable
-# Example: predicting 'age' from 'sgot'
-X = df[['sgot', 'age']].dropna()  # Drop rows where any of the selected columns have NaN values
-y = X['age'].values
-X = X[['sgot']].values  # Keep only the feature column
 
-# Check if lengths match after dropping NaNs
+X = df[['sgot', 'age']].dropna() 
+y = X['age'].values
+X = X[['sgot']].values  
+
 assert len(X) == len(y), "Length mismatch after dropping NaNs"
 
-# Add a constant column for the intercept
 X_with_intercept = np.vstack([np.ones(len(X)), X[:, 0]]).T
 
-# Step a: Calculate coefficients using Pedhazur formula
+#a: Calculate coefficients using Pedhazur formula
 X_mean = np.mean(X_with_intercept, axis=0)
 y_mean = np.mean(y)
 XY_mean = np.mean(X_with_intercept[:, 1] * y)
 X_squared_mean = np.mean(X_with_intercept[:, 1] ** 2)
 
-# Compute B1 (slope) and B0 (intercept) using Pedhazur formula
+
 B1 = (XY_mean - X_mean[1] * y_mean) / (X_squared_mean - X_mean[1] ** 2)
 B0 = y_mean - B1 * X_mean[1]
 
-# Compute predicted responses
+
 y_pred = B0 + B1 * X_with_intercept[:, 1]
 
-# Compute RMSE
+
 RMSE = np.sqrt(np.mean((y - y_pred) ** 2))
 
-# Display coefficients and RMSE
 print(f"Pedhazur Method - Intercept (B0): {B0:.2f}")
 print(f"Pedhazur Method - Slope (B1): {B1:.2f}")
 print(f"Pedhazur Method - RMSE: {RMSE:.2f}")
 
-# Step b: Scatter plot and regression line
+#b: Scatter plot and regression line
 plt.scatter(X[:, 0], y, color='red', label='Data Points')
 plt.plot(X_with_intercept[:, 1], y_pred, color='blue', label='Regression Line')
 plt.xlabel('SGOT')
@@ -275,33 +271,28 @@ plt.legend()
 plt.grid(True)
 plt.show()
 
-# Step c: Calculate coefficients using matrix method (calculus method)
-# Create matrices for the normal equations
+#c: Calculate coefficients using matrix method (calculus method)
+
 mat1 = np.array([[len(X), np.sum(X)], [np.sum(X), np.sum(X ** 2)]])
 mat2 = np.array([[np.sum(y)], [np.sum(X * y)]])
 
-# Compute coefficients using matrix inversion and multiplication
 coeffs = np.dot(np.linalg.inv(mat1), mat2)
 b0_mat, b1_mat = coeffs[0, 0], coeffs[1, 0]
 
-# Compute predicted responses using matrix method
 y_mat = b0_mat + b1_mat * X_with_intercept[:, 1]
 
-# Compute RMSE for matrix method
 squared_errors = (y - y_mat) ** 2
 rmse_mat = np.sqrt(np.mean(squared_errors))
 
-# Display coefficients and RMSE for matrix method
 print(f"Matrix Method - Intercept (B0): {b0_mat:.2f}")
 print(f"Matrix Method - Slope (B1): {b1_mat:.2f}")
 print(f"Matrix Method - RMSE: {rmse_mat:.2f}")
 
-# Step d: Compare coefficients and predictions
+#d: Compare coefficients and predictions
 print(f"Coefficients comparison:")
 print(f"Pedhazur Method - Intercept (B0): {B0:.2f}, Slope (B1): {B1:.2f}")
 print(f"Matrix Method - Intercept (B0): {b0_mat:.2f}, Slope (B1): {b1_mat:.2f}")
 
-# Predict y value for a given data point using both methods
 study_time = 10
 predicted_y_pedhazur = B0 + B1 * study_time
 predicted_y_matrix = b0_mat + b1_mat * study_time
