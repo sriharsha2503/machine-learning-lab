@@ -1,0 +1,12 @@
+mat1=np.array([[len(X),np.sum(X)],[np.sum(X),np.sum(X**2)]])
+mat2=np.array([[np.sum(Y),np.sum(X*Y)]])
+coeffs=np.dot(np.linalg.inv(mat1),mat2.T)
+b0_mat,b1_mat=coeffs[0,0],coeffs[1,0]
+
+y_mat = b0_mat + b1_mat * X
+squared_errors = (Y - y_mat) ** 2
+rmse_mat = np.sqrt(np.mean(squared_errors))
+
+print(f"{b1_mat}x + {b0_mat}")
+print(y_mat)
+print(rmse_mat)
