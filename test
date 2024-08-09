@@ -10,3 +10,22 @@ rmse_mat = np.sqrt(np.mean(squared_errors))
 print(f"{b1_mat}x + {b0_mat}")
 print(y_mat)
 print(rmse_mat)
+========================================================
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error
+
+X = df[['StudyTime']].values 
+y = df['Score'].values 
+model = LinearRegression()
+model.fit(X, y)
+B1 = model.coef_[0]
+B0 = model.intercept_
+
+y_sklearn = model.predict(X)
+rmse_sklearn = np.sqrt(mean_squared_error(y, y_sklearn))
+
+
+print(f"scikit-learn - B0 (Intercept): {B0}")
+print(f"scikit-learn - B1 (Slope): {B1}")
+print(y_sklearn)
+print(rmse_sklearn)
