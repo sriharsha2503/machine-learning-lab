@@ -1,0 +1,147 @@
+import numpy as np
+import pandas as pd
+from collections import Counter
+import math
+
+# Sample dataset
+data = {
+    'Outlook': ['Sunny', 'Sunny', 'Overcast', 'Rain', 'Rain', 'Rain', 
+                'Overcast', 'Sunny', 'Sunny', 'Rain', 'Sunny', 
+                'Overcast', 'Overcast', 'Rain'],
+    'Temperature': [85, 80, 83, 70, 68, 65, 64, 72, 69, 75, 75, 
+                    72, 81, 71],
+    'Humidity': [85, 90, 78, 96, 80, 70, 65, 95, 70, 80, 70, 
+                 90, 75, 80],
+    'Wind': ['Weak', 'Strong', 'Weak', 'Weak', 'Weak', 'Strong', 
+             'Strong', 'Weak', 'Weak', 'Weak', 'Strong', 
+             'Strong', 'Weak', 'Strong'],
+    'Play Tennis': ['No', 'No', 'Yes', 'Yes', 'Yes', 'No', 
+                    'Yes', 'No', 'Yes', 'Yes', 'Yes', 
+                    'Yes', 'Yes', 'No']
+}
+
+# Create DataFrame
+df = pd.DataFrame(data)
+
+class C45DecisionTree:
+    def __init__(self):
+        self.tree = None
+
+    def entropy(self, y):
+        counter = Counter(y)
+        total = len(y)
+        return -sum((count/total) * math.log2(count/total) for count in counter.values() if count > 0)
+
+    def information_gain(self, X, y, feature):
+        total_entropy = self.entropy(y)
+        values = X[feature].unique()
+        weighted_entropy = 0
+        for value in values:
+            subset = y[X[feature] == value]
+            weighted_entropy += (len(subset) / len(y)) * self.entropy(subset)
+        return total_entropy - weighted_entropy
+
+    def best_feature(self, X, y):
+        gains = {feature: self.information_gain(X, y, feature) for feature in X.columns}
+        return max(gains, key=gains.get)
+
+    def build_tree(self, X, y):
+        if len(set(y)) == 1:
+            return y.iloc[0]
+        if X.empty:
+            return y.mode()[0]
+        
+        best_feat = self.best_feature(X, y)
+        tree = {best_feat: {}}
+        
+        for value in X[best_feat].unique():
+            subset_X = X[X[best_feat] == value].drop(columns=[best_feat])
+            subset_y = y[X[best_feat] == value]
+            tree[best_feat][value] = self.build_tree(subset_X, subset_y)
+        
+        return tree
+
+    def fit(self, X, y):
+        self.tree = self.build_tree(X, y)
+
+    def predict(self, x):
+        node = self.tree
+        while isinstance(node, dict):
+            feature = next(iter(node))
+            node = node[feature].get(x[feature], None)
+            if node is None:
+                return None
+        return node
+
+class CARTDecisionTree:
+    def __init__(self):
+        self.tree = None
+
+    def gini_index(self, y):
+        counter = Counter(y)
+        total = len(y)
+        return 1 - sum((count / total) ** 2 for count in counter.values())
+
+    def gini_gain(self, X, y, feature):
+        total_gini = self.gini_index(y)
+        values = X[feature].unique()
+        weighted_gini = 0
+        for value in values:
+            subset = y[X[feature] == value]
+            weighted_gini += (len(subset) / len(y)) * self.gini_index(subset)
+        return total_gini - weighted_gini
+
+    def best_split(self, X, y):
+        gains = {feature: self.gini_gain(X, y, feature) for feature in X.columns}
+        return max(gains, key=gains.get)
+
+    def build_tree(self, X, y):
+        if len(set(y)) == 1:
+            return y.iloc[0]
+        if X.empty:
+            return y.mode()[0]
+
+        best_feat = self.best_split(X, y)
+        tree = {best_feat: {}}
+
+        for value in X[best_feat].unique():
+            subset_X = X[X[best_feat] == value].drop(columns=[best_feat])
+            subset_y = y[X[best_feat] == value]
+            tree[best_feat][value] = self.build_tree(subset_X, subset_y)
+
+        return tree
+
+    def fit(self, X, y):
+        self.tree = self.build_tree(X, y)
+
+    def predict(self, x):
+        node = self.tree
+        while isinstance(node, dict):
+            feature = next(iter(node))
+            node = node[feature].get(x[feature], None)
+            if node is None:
+                return None
+        return node
+
+# Fit the models
+X = df[['Outlook', 'Temperature', 'Humidity', 'Wind']]
+y = df['Play Tennis']
+
+# C4.5 Decision Tree
+c45_model = C45DecisionTree()
+c45_model.fit(X, y)
+
+# CART Decision Tree
+cart_model = CARTDecisionTree()
+cart_model.fit(X, y)
+
+# Example prediction
+new_sample = {'Outlook': 'Sunny', 'Temperature': 75, 'Humidity': 70, 'Wind': 'Strong'}
+sample_series = pd.Series(new_sample)
+
+# Predictions
+prediction_c45 = c45_model.predict(sample_series)
+prediction_cart = cart_model.predict(sample_series)
+
+print(f'Prediction (C4.5): {prediction_c45}')
+print(f'Prediction (CART): {prediction_cart}')
