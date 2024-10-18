@@ -1,0 +1,80 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.cluster.hierarchy import dendrogram, linkage
+
+# Step 1: Define the data points
+data_points = np.array([18, 22, 25, 27, 42, 43])
+
+# Step 2: Construct the initial proximity matrix
+def compute_proximity_matrix(data):
+    n = len(data)
+    proximity_matrix = np.zeros((n, n))
+    for i in range(n):
+        for j in range(i + 1, n):
+            proximity_matrix[i][j] = abs(data[i] - data[j])
+            proximity_matrix[j][i] = proximity_matrix[i][j]
+    return proximity_matrix
+
+# Step 3: Merge clusters and update proximity matrix
+def single_linkage_clustering(data):
+    proximity_matrix = compute_proximity_matrix(data)
+    n = len(data)
+    clusters = [[i] for i in range(n)]  # Initial clusters
+    iterations = []  # To store the proximity matrix at each iteration
+
+    while len(clusters) > 1:
+        # Find the minimum distance in the proximity matrix
+        min_dist = np.inf
+        cluster_to_merge = (0, 0)
+
+        for i in range(len(proximity_matrix)):
+            for j in range(i + 1, len(proximity_matrix)):
+                if proximity_matrix[i][j] < min_dist:
+                    min_dist = proximity_matrix[i][j]
+                    cluster_to_merge = (i, j)
+
+        # Get the indices of the clusters to merge
+        i, j = cluster_to_merge
+        new_cluster = clusters[i] + clusters[j]  # Merge the clusters
+        clusters.append(new_cluster)  # Add the new cluster
+        del clusters[max(i, j)]  # Remove the old clusters
+
+        # Update the proximity matrix
+        new_proximity_matrix = np.zeros((len(clusters), len(clusters)))
+
+        for m in range(len(clusters)):
+            if m < len(clusters) - 1:  # For the existing clusters
+                for n in range(m + 1, len(clusters) - 1):
+                    # Minimum distance between clusters
+                    new_proximity_matrix[m][n] = np.min([proximity_matrix[x][y]
+                                                          for x in clusters[m] for y in clusters[n]])
+                    new_proximity_matrix[n][m] = new_proximity_matrix[m][n]
+
+            # Update the new cluster distances
+            if m == len(clusters) - 1:  # For the newly merged cluster
+                for k in range(len(clusters) - 1):
+                    new_proximity_matrix[m][k] = np.min([proximity_matrix[x][y]
+                                                          for x in clusters[m] for y in clusters[k]])
+                    new_proximity_matrix[k][m] = new_proximity_matrix[m][k]
+
+        proximity_matrix = new_proximity_matrix  # Update the proximity matrix
+        iterations.append(proximity_matrix.copy())  # Save the current proximity matrix
+
+    return iterations
+
+# Run the clustering
+iterations = single_linkage_clustering(data_points)
+
+# Print the proximity matrix at each iteration
+print("Proximity Matrix Iterations:")
+for idx, matrix in enumerate(iterations):
+    print(f"Iteration {idx + 1}:\n{matrix}\n")
+
+# Step 4: Create the dendrogram
+linked = linkage(data_points.reshape(-1, 1), method='single')
+plt.figure(figsize=(10, 6))
+dendrogram(linked, labels=data_points)
+plt.title('Dendrogram of Agglomerative Hierarchical Clustering')
+plt.xlabel('Data Points')
+plt.ylabel('Distance')
+plt.show()
